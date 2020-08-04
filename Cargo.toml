@@ -1,0 +1,7 @@
+[package]
+name = "uboy"
+version = "0.1.0"
+authors = ["Uğurcan Akkök <ucak_gestalt@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
