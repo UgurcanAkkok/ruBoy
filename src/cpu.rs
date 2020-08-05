@@ -1,4 +1,5 @@
 use crate::mem::{CartHeader, Memory};
+#[allow(unused_imports)]
 use log::{warn, info, error, debug, trace};
 use std::fmt::{self, Debug, Formatter};
 
@@ -66,6 +67,7 @@ const OP_CYCLES: [u8; 0x100] = [
      12, 12,  8,  4,  0, 16,  8, 16, 12,  8, 16, 4,  0,  0, 8, 16, //f
 ];
 
+#[allow(dead_code)]
 impl Cpu {
     pub fn new(mem: Memory) -> Self {
         Self {

@@ -1,4 +1,5 @@
 use std::{env, io::stdout};
+#[allow(unused_imports)]
 use log::{warn, info, error, debug, trace};
 use simplelog::{WriteLogger, LevelFilter};
 mod cpu;
@@ -35,7 +36,7 @@ fn main() {
             None => break,
         }
     }
-    WriteLogger::init(LevelFilter::Off, simplelog::Config::default(), stdout());
+    WriteLogger::init(LevelFilter::Off, simplelog::Config::default(), stdout()).unwrap();
 
     if dump {
         // disassemble(&romname);

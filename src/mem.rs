@@ -1,4 +1,4 @@
-use crate::utils::*;
+#[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
 use std::{fs, ops::Index};
 
@@ -77,6 +77,7 @@ impl From<u8> for CartType {
 //     ((x >> 8) & 0xFF) as u8
 // }
 
+#[allow(dead_code)]
 pub struct Vram {
     //TODO rewrite to be able to use bank switching
     charram: [u8; 0x1800], /* 0x8000 - 0x97FF */
@@ -85,10 +86,10 @@ pub struct Vram {
 }
 
 impl Vram {
-    pub fn write(&self, addr: u16, val: u8) {
+    pub fn write(&self, _addr: u16, _val: u8) {
         panic!("NOT IMPLEMENTED");
     }
-    pub fn read(&self, addr: u16) -> u8 {
+    pub fn read(&self, _addr: u16) -> u8 {
         panic!("NOT IMPLEMENTED");
     }
 }
@@ -413,6 +414,7 @@ impl Rom {
         Self { rom: rom, bank: 0 }
     }
 
+    #[allow(dead_code)]
     pub fn set_bank(mut self, index: u8) {
         self.bank = index;
     }
