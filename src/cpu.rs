@@ -1,5 +1,5 @@
 use crate::mem::{CartHeader, Memory};
-use crate::utils::{log_write, LogLevel};
+use log::{warn, info, error, debug, trace};
 use std::fmt::{self, Debug, Formatter};
 
 #[derive(Default, PartialEq)]
@@ -145,8 +145,8 @@ impl Cpu {
         self.initialize(&cart);
         loop {
             let op = self.fetch();
-            log_write(LogLevel::Message, &format!("Op code is 0x{:x}.", op));
-            log_write(LogLevel::Message, &format!("{:04x?}", self));
+            info!("Op code is 0x{:x}.", op);
+            info!("{:04x?}", self);
             self.execute(op);
         }
     }
@@ -237,7 +237,7 @@ impl Cpu {
     }
 
     fn jump(&mut self, addr: u16) {
-        log_write(LogLevel::Message, &format!("Jumping to 0x{:X}", addr));
+        trace!("Jumping to 0x{:X}", addr);
         self.pc = addr;
     }
 }

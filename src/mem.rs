@@ -1,4 +1,5 @@
 use crate::utils::*;
+use log::{debug, error, info, trace, warn};
 use std::{fs, ops::Index};
 
 #[derive(Copy, Clone)]
@@ -118,27 +119,18 @@ impl CartHeader {
         let default_title: String = String::from("Default Title");
         let title = match rom.get(0x134..0x143) {
             Some(bytes) => String::from_utf8(Vec::from(bytes)).unwrap_or_else(|e| {
-                log_write(
-                    LogLevel::Error,
-                    "Can not convert title's bytes to String, using default title",
-                );
-                log_write(LogLevel::Error, &format!("Error: {}", e));
+                error!("Can not convert title's bytes to String, using default title",);
+                error!("Error: {}", e);
                 default_title
             }),
             None => {
-                log_write(
-                    LogLevel::Error,
-                    "Can not get title values from rom, using default title",
-                );
+                error!("Can not get title values from rom, using default title",);
                 default_title
             }
         };
         println!("loading the '{}'", title);
         let gbc_flag = rom.get(0x143).unwrap_or_else(|| {
-            log_write(
-                LogLevel::Error,
-                "Can not understand gbc_flag from rom, using default value",
-            );
+            error!("Can not understand gbc_flag from rom, using default value");
             &(0xC0 as u8)
         });
         let mut gbc_only = false;
@@ -152,59 +144,41 @@ impl CartHeader {
                 gbc = true;
             }
             _ => {
-                log_write(
-                    LogLevel::Message,
-                    &format!(
-                        "GBC Flag '{}' from cartridge can not be understood, not GBC Rom",
-                        *gbc_flag
-                    ),
+                info!(
+                    "GBC Flag '{}' from cartridge can not be understood, not GBC Rom",
+                    *gbc_flag
                 );
             }
         }
         let manufact = if gbc {
             match rom.get(0x13F..=0x142) {
                 Some(bytes) => String::from_utf8(bytes.to_vec()).unwrap_or_else(|e| {
-                    log_write(
-                        LogLevel::Error,
-                        &format!(
-                            "Can not read manufact bytes to String, using default ''\n{}",
-                            e
-                        ),
+                    error!(
+                        "Can not read manufact bytes to String, using default ''\n{}",
+                        e
                     );
                     "".to_string()
                 }),
                 None => {
-                    log_write(
-                        LogLevel::Error,
-                        "Can not read bytes for manufact, using default ''",
-                    );
+                    error!("Can not read bytes for manufact, using default ''");
                     "".to_string()
                 }
             }
         } else {
-            log_write(
-                LogLevel::Message,
-                "No manufacturer code, game is not for GBC",
-            );
+            info!("No manufacturer code, game is not for GBC");
             '\0'.to_string()
         };
 
         let new_license = match rom.get(0x144..=0x145) {
             Some(bytes) => String::from_utf8(bytes.to_vec()).unwrap_or_else(|e| {
-                log_write(
-                    LogLevel::Error,
-                    &format!(
-                        "Can not read new license bytes to String, using default '00'\n{}",
-                        e
-                    ),
+                error!(
+                    "Can not read new license bytes to String, using default '00'\n{}",
+                    e
                 );
                 "00".to_string()
             }),
             None => {
-                log_write(
-                    LogLevel::Error,
-                    "Can not read bytes for new license code, using default",
-                );
+                error!("Can not read bytes for new license code, using default");
                 "00".to_string()
             }
         };
@@ -307,10 +281,7 @@ impl CartHeader {
                 panic!("This rom size is not supported at the moment");
             }
             _ => {
-                log_write(
-                    LogLevel::Error,
-                    "Rom size is not understood, using default rom size of 32Kb",
-                );
+                error!("Rom size is not understood, using default rom size of 32Kb");
                 32 * 1024
             }
         };
@@ -323,10 +294,7 @@ impl CartHeader {
             4 => 128 * 1024,
             5 => 64 * 1024,
             _ => {
-                log_write(
-                    LogLevel::Error,
-                    "Ram size is not understood, using default ram size of 0 Kb",
-                );
+                error!("Ram size is not understood, using default ram size of 0 Kb");
                 0
             }
         };
@@ -337,15 +305,9 @@ impl CartHeader {
         }
         let use_new_license = old_license == 0x33;
         if use_new_license {
-            log_write(
-                LogLevel::Message,
-                &format!("Licensee code is {}", new_license),
-            );
+            info!("Licensee code is {}", new_license);
         } else {
-            log_write(
-                LogLevel::Message,
-                &format!("(Old) Licensee code is {}", old_license),
-            );
+            info!("(Old) Licensee code is {}", old_license);
         }
         let rom_version = rom[0x14C];
         // Checksum function is x=0:FOR i=0134h TO 014Ch:x=x-MEM[i]-1:NEXT
@@ -498,10 +460,7 @@ impl Default for Memory {
 impl Memory {
     pub fn load_rom(&mut self, fname: &str) -> CartHeader {
         let rom_bytes = fs::read(fname).expect(&format!("Can not read rom file: {}", fname));
-        log_write(
-            LogLevel::Message,
-            &format!("Number of bytes read from rom: {}", rom_bytes.len()),
-        );
+        info!("Number of bytes read from rom: {}", rom_bytes.len());
         self.rom = Rom::new(rom_bytes.clone());
         CartHeader::new(&rom_bytes)
     }
@@ -509,38 +468,18 @@ impl Memory {
     pub fn read8(&self, addr: u16) -> u8 {
         let val = match addr {
             0x0000..=0x7fff => self.rom[addr],
-            0x8000..=0x9FFF => {
-                self.vram.read(addr - 0x8000)
-            }
-            0xA000..=0xBFFF => {
-                self.sram[(addr - 0xA000) as usize]
-            }
-            0xC000..=0xCFFF => {
-                self.wram0[(addr - 0xC000) as usize]
-            }
-            0xD000..=0xDFFF => {
-                self.wramx[(addr - 0xD000) as usize]
-            }
-            0xe000..=0xFDFF => {
-                self.read8(addr - 0x2000)
-            }
-            0xFE00..=0xFE9F => {
-                self.oam[(addr - 0xFE00) as usize]
-            }
-            0xFEA0..=0xFEFF => {
-                0
-            }
-            0xFF00..=0xFF7F => {
-                self.ioregs[(addr - 0xFF00) as usize]
-            }
-            0xFF00..=0xFFFE => {
-                self.hram[(addr - 0xFF80) as usize]
-            }
-            0xFFFF => {
-                self.ie_reg[0]
-            }
+            0x8000..=0x9FFF => self.vram.read(addr - 0x8000),
+            0xA000..=0xBFFF => self.sram[(addr - 0xA000) as usize],
+            0xC000..=0xCFFF => self.wram0[(addr - 0xC000) as usize],
+            0xD000..=0xDFFF => self.wramx[(addr - 0xD000) as usize],
+            0xe000..=0xFDFF => self.read8(addr - 0x2000),
+            0xFE00..=0xFE9F => self.oam[(addr - 0xFE00) as usize],
+            0xFEA0..=0xFEFF => 0,
+            0xFF00..=0xFF7F => self.ioregs[(addr - 0xFF00) as usize],
+            0xFF00..=0xFFFE => self.hram[(addr - 0xFF80) as usize],
+            0xFFFF => self.ie_reg[0],
         };
-        log_write(LogLevel::Message, &format!("Value 0x{:x} read from 0x{:X}", val, addr));
+        info!("Value 0x{:x} read from 0x{:X}", val, addr);
         val
     }
     pub fn read16(&self, addr: u16) -> u16 {
@@ -550,10 +489,7 @@ impl Memory {
     pub fn write(&mut self, addr: u16, val: u8) {
         match addr {
             0x0000..=0x7fff => {
-                log_write(
-                    LogLevel::Warning,
-                    &format!("Ignoring write to ROM address {}", addr),
-                );
+                warn!("Ignoring write to ROM address {}", addr);
             }
             0x8000..=0x9FFF => {
                 self.vram.write(addr - 0x8000, val);
@@ -574,12 +510,9 @@ impl Memory {
                 self.oam[(addr - 0xFE00) as usize] = val;
             }
             0xFEA0..=0xFEFF => {
-                log_write(
-                    LogLevel::Message,
-                    &format!(
-                        "Ignoring write to unused range 0xFEA0-0xFEFF, requested address was 0x{:X}",
-                        addr
-                    ),
+                info!(
+                    "Ignoring write to unused range 0xFEA0-0xFEFF, requested address was 0x{:X}",
+                    addr
                 );
                 return;
             }
@@ -593,7 +526,7 @@ impl Memory {
                 self.ie_reg[0] = val;
             }
         }
-        log_write(LogLevel::Message, &format!("0x{:x} written to memory address 0x{:X}", val, addr));
+        info!("0x{:x} written to memory address 0x{:X}", val, addr);
     }
 
     pub fn write16(&mut self, addr: u16, val: u16) {

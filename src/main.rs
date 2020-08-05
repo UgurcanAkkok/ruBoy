@@ -1,8 +1,10 @@
-use std::env;
+use std::{env, io::stdout};
+use log::{warn, info, error, debug, trace};
+use simplelog::{WriteLogger, LevelFilter};
 mod cpu;
 mod mem;
 mod utils;
-use utils::{log_close, log_init, usage};
+use utils::{usage};
 use mem::Memory;
 use cpu::Cpu;
 
@@ -33,7 +35,7 @@ fn main() {
             None => break,
         }
     }
-    log_init();
+    WriteLogger::init(LevelFilter::Off, simplelog::Config::default(), stdout());
 
     if dump {
         // disassemble(&romname);
@@ -43,6 +45,4 @@ fn main() {
         let mut cpu = Cpu::new(memory);
         cpu.run(cartridge);
     }
-
-    log_close();
 }
